@@ -9,11 +9,20 @@ import Effects._
 object BumpDeps extends AutoPlugin {
 
   override def requires = GitPlugin
-  override lazy val projectSettings = Seq( commands ++= Seq(bumpDeps) )
+  override lazy val projectSettings = Seq( commands ++= Seq(bumpDeps), advertiseDef )
 
   def gitEffect(args: String*): Uffect = uffect { action(_, args) }
 
   def bumpDeps = Command.command("bumpDeps")(bumpEffect.runUnit)
+
+  val advertise = taskKey[File]("generate a file advertising this library")
+
+  def advertiseDef = advertise := {
+    val f = file(s"${target.value}/${name.value}.sbt")
+    val d = s""""${organization.value}" %% "${name.value}" % "${version.value}""""
+    IO.write(f, s"libraryDependencies += $d\n")
+    f
+  }
 
   def bumpEffect: Uffect = findUpdates >>= applyUpdates
 
