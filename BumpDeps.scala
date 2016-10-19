@@ -28,8 +28,12 @@ object BumpDeps extends AutoPlugin {
 
   def bumpFileDef = bumpFile := {
     val f = file(s"${target.value}/${name.value}.sbt")
-    val d = s""""${organization.value}" %% "${name.value}" % "${version.value}""""
-    IO.write(f, s"libraryDependencies += $d\n")
+    val v =
+      if(sbtPlugin.value)
+        s"""addSbtPlugin("${organization.value}" % "${name.value}" % "${version.value}")\n"""
+      else
+        s"""libraryDependencies += "${organization.value}" %% "${name.value}" % "${version.value}"\n"""
+    IO.write(f, v)
     f
   }
 
