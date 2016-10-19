@@ -3,6 +3,7 @@ import Keys._
 
 import com.typesafe.sbt._
 import SbtGit.GitCommand.action
+import SbtGit.git.{useGitDescribe, gitTagToVersionNumber}
 
 import Effects._
 
@@ -10,16 +11,16 @@ object BumpDeps extends AutoPlugin {
   import autoImport._
 
   override def requires = GitPlugin
+  override def trigger = allRequirements
 
   object autoImport {
-    val advertise = taskKey[File]("generate a file advertising this library")
-    val advertiseBuild = taskKey[Unit]("publish locally and advertise")
+    val bumpFile = taskKey[File]("generate a file advertising this library")
+    val dottedGitVersioning = Seq(useGitDescribe := true, dottedVersionDef)
   }
 
   override lazy val projectSettings = Seq(
+    bumpFileDef,
     bumpDepsDef,
-    advertiseDef,
-    advertiseBuildDef,
     bumpBuildDef
   )
 
@@ -27,21 +28,25 @@ object BumpDeps extends AutoPlugin {
 
   def bumpBuildDef = commands += Command.command("bumpBuild")(bumpBuildEffect.runUnit)
 
-  def advertiseDef = advertise := {
+  def bumpFileDef = bumpFile := {
     val f = file(s"${target.value}/${name.value}.sbt")
     val d = s""""${organization.value}" %% "${name.value}" % "${version.value}""""
     IO.write(f, s"libraryDependencies += $d\n")
     f
   }
 
-  def advertiseBuildDef = advertiseBuild := {
-    advertise.value
-    publishLocal.value
+  def dottedVersionDef = gitTagToVersionNumber := {
+    tag: String =>
+      if( tag.startsWith("v")) Some(tag.drop(1).replace("-","."))
+      else None
   }
 
-  def bumpBuildEffect: Uffect = bumpEffect >> taskEffect(advertiseBuild)
+  lazy val bumpBuildEffect: Uffect =
+    bumpEffect >>
+    taskEffect(publishLocal) >>
+    taskEffect(bumpFile)
 
-  def bumpEffect: Uffect = findUpdates >>= applyUpdates
+  lazy val bumpEffect: Uffect = findUpdates >>= applyUpdates
 
   def findUpdates: Effect[Seq[(File, File)]] = constEffect {
     for {
