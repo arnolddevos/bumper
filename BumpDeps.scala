@@ -44,7 +44,10 @@ object BumpDeps extends AutoPlugin {
     taskEffect(publishLocal) >>
     taskEffect(bumpFile)
 
-  lazy val bumpEffect: Uffect = findUpdates >>= applyUpdates
+  lazy val bumpEffect: Uffect =
+    (findUpdates >>=
+    applyUpdates) >>
+    uffect(_.reload)
 
   def findUpdates: Effect[Seq[(File, File)]] = constEffect {
     for {
@@ -67,8 +70,7 @@ object BumpDeps extends AutoPlugin {
     if(updates.nonEmpty)
       copyUpdates(updates) >>
       addUpdates(updates) >>
-      gitEffect("commit", "bump dependencies") >>
-      uffect(_.reload)
+      gitEffect("commit", "bump dependencies")
     else
       noEffect
   }
