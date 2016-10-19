@@ -13,16 +13,19 @@ object BumpDeps extends AutoPlugin {
 
   object autoImport {
     val advertise = taskKey[File]("generate a file advertising this library")
-    val bumpBuild = taskKey[Unit]("publish locally and advertise")
+    val advertiseBuild = taskKey[Unit]("publish locally and advertise")
   }
 
   override lazy val projectSettings = Seq(
     bumpDepsDef,
     advertiseDef,
+    advertiseBuildDef,
     bumpBuildDef
   )
 
   def bumpDepsDef = commands += Command.command("bumpDeps")(bumpEffect.runUnit)
+
+  def bumpBuildDef = commands += Command.command("bumpBuild")(bumpBuildEffect.runUnit)
 
   def advertiseDef = advertise := {
     val f = file(s"${target.value}/${name.value}.sbt")
@@ -31,10 +34,12 @@ object BumpDeps extends AutoPlugin {
     f
   }
 
-  def bumpBuildDef = bumpBuild := {
+  def advertiseBuildDef = advertiseBuild := {
     advertise.value
     publishLocal.value
   }
+
+  def bumpBuildEffect: Uffect = bumpEffect >> taskEffect(advertiseBuild)
 
   def bumpEffect: Uffect = findUpdates >>= applyUpdates
 
@@ -75,6 +80,21 @@ object BumpDeps extends AutoPlugin {
   def addUpdates(updates: Seq[(File, File)]): Uffect = seqUffects {
     for ((dep, _) <- updates)
     yield gitEffect("add", dep.getName)
+  }
+
+  def taskEffectOrError[T](k: ScopedKey[Task[T]]): Effect[Either[String,T]] = effect {
+    s =>
+    Project.runTask(k, s) match {
+      case Some((s1, Inc(i)))  => (s1, Left(Incomplete.show(i.tpe)))
+      case Some((s1, Value(v))) => (s1, Right(v))
+      case None => (s, Left("no task for key " + k.toString))
+    }
+  }
+
+  def taskEffect[T](k: ScopedKey[Task[T]]): Uffect = taskEffectOrError(k) >>= {
+    case Left(e)  => println(e); uffect(_.fail)
+    case Right(_) => noEffect
+
   }
 
   def gitEffect(args: String*): Uffect = uffect { action(_, args) }
