@@ -4,6 +4,4 @@ organization := "com.bgsig"
 
 sbtPlugin := true
 
-enablePlugins(GitVersioning)
-
-dottedGitVersioning
+enablePlugins(DottedGitVersioning)
