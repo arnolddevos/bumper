@@ -70,7 +70,7 @@ object BumpDeps extends AutoPlugin {
     if(updates.nonEmpty)
       copyUpdates(updates) >>
       addUpdates(updates) >>
-      gitEffect("commit", "bump dependencies")
+      gitEffect("commit", "-m", "bump dependencies")
     else
       noEffect
   }
