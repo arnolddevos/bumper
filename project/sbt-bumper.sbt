@@ -1,1 +1,1 @@
-addSbtPlugin("com.bgsig" % "sbt-bumper" % "0.2.6.g38f00ac")
+addSbtPlugin("com.bgsig" % "sbt-bumper" % "0.2.8.ga594781")
