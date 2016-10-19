@@ -2,9 +2,7 @@ import sbt._
 import Keys._
 
 import com.typesafe.sbt._
-import SbtGit.versionWithGit
 import SbtGit.GitCommand.action
-import SbtGit.git.{useGitDescribe, gitTagToVersionNumber}
 
 import Effects._
 
@@ -16,7 +14,6 @@ object BumpDeps extends AutoPlugin {
 
   object autoImport {
     val bumpFile = taskKey[File]("generate a file advertising this library")
-    val dottedGitVersioning = versionWithGit ++ Seq(useGitDescribe := true, dottedVersionDef)
   }
 
   override lazy val projectSettings = Seq(
@@ -34,12 +31,6 @@ object BumpDeps extends AutoPlugin {
     val d = s""""${organization.value}" %% "${name.value}" % "${version.value}""""
     IO.write(f, s"libraryDependencies += $d\n")
     f
-  }
-
-  def dottedVersionDef = gitTagToVersionNumber := {
-    tag: String =>
-      if( tag.startsWith("v")) Some(tag.drop(1).replace("-","."))
-      else None
   }
 
   lazy val bumpBuildEffect: Uffect =
