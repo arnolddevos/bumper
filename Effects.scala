@@ -1,3 +1,5 @@
+package bumper
+
 import sbt._
 import Keys._
 

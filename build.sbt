@@ -1,4 +1,4 @@
-name := "bumper"
+name := "sbt-bumper"
 
 organization := "com.bgsig"
 
