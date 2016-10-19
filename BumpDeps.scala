@@ -21,12 +21,15 @@ object BumpDeps extends AutoPlugin {
   override lazy val projectSettings = Seq(
     bumpFileDef,
     bumpDepsDef,
-    bumpBuildDef
+    bumpBuildDef,
+    bumpContinueDef
   )
 
-  def bumpDepsDef = commands += Command.command("bumpDeps")(bumpEffect.runUnit)
+  def bumpDepsDef = commands += Command.command("bumpDeps")(bumpDepsEffect.runUnit)
 
   def bumpBuildDef = commands += Command.command("bumpBuild")(bumpBuildEffect.runUnit)
+
+  def bumpContinueDef = commands += Command.command("bumpContinue")(bumpContinueEffect.runUnit)
 
   def bumpFileDef = bumpFile := {
     val f = file(s"${target.value}/${name.value}.sbt")
@@ -40,11 +43,16 @@ object BumpDeps extends AutoPlugin {
   }
 
   lazy val bumpBuildEffect: Uffect =
-    bumpEffect >>
+    (findUpdates >>=
+    applyUpdates) >>
+    uffect("bumpContinue" :: _) >>
+    uffect(_.reload)
+
+  lazy val bumpContinueEffect: Uffect =
     taskEffect(publishLocal) >>
     taskEffect(bumpFile)
 
-  lazy val bumpEffect: Uffect =
+  lazy val bumpDepsEffect: Uffect =
     (findUpdates >>=
     applyUpdates) >>
     uffect(_.reload)
